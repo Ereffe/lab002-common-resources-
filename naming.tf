@@ -25,23 +25,28 @@
 #     używany jest workload_short, a jeśli go brak lub też jest za długi: błąd planu (moduł)
 
 variable "student_id" {
-  description = <<-EOT
-  Identyfikator studenta: g<grupa>k<podgrupa>n<6 ostatnich cyfr indeksu>,
-  np. g14k01n123456. Zapewnia unikalność nazw globalnych (SA, KV, ACR, Function App).
-  Najwygodniej ustawić raz w powłoce: export TF_VAR_student_id=g14k01n123456
-  EOT
-  type        = string
-  nullable    = false
+  type     = string
+  nullable = false
+
   validation {
-    condition     = can(regex("^g[0-9]{1,2}k[0-9]{2}n[0-9]{6}$", var.student_id))
+    condition = can(regex("^g[0-9]{1,2}k[0-9]{2}n[0-9]{6}$",
+    var.student_id))
     error_message = "Format: g<grupa>k<podgrupa>n<6 ostatnich cyfr indeksu>, np. g14k01n123456."
   }
 }
 
 locals {
-  year = "2026"
-  yy   = substr(local.year, 2, 2) # "26" -- rok w nazwach zasobów
-  sid  = var.student_id
+  course = "pk-cloud-basics"
+  year   = "2026"
+  yy     = substr(local.year, 2, 2) # "26" -- rok w nazwach zasobów
+  sid    = var.student_id
+
+  tags = {
+    course  = local.course
+    year    = local.year
+    lab     = local.lab # z locals.tf danego laboratorium
+    student = local.sid
+  }
 
   # Grupy zasobów (RG) -- wspólne dla kilku labów, tworzone w lab 2. Liczone lokalnie
   # (nie przez moduł): backend.tf odwołuje się do rg.common przed `tofu init`.
@@ -78,10 +83,8 @@ module "naming" {
 }
 
 locals {
-  course = module.naming.tags.course # zgodność wsteczna -- kilka labów odwołuje się wprost
-  wl     = module.naming.wl
-  tags   = module.naming.tags
-  names  = module.naming.names
+  wl    = module.naming.wl
+  names = module.naming.names
 }
 
 output "naming" {
